@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>经典斗地主AI推理能力测试</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script>
+    (function () {
+      var link = document.querySelector('link[rel="stylesheet"]');
+      if (link) {
+        link.addEventListener('error', function () {
+          (window.DDZ = window.DDZ || {}).__missing = true;
+        });
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div id="fatal" class="fatal" aria-live="polite"></div>
+
+  <header class="topbar">
+    <h1>经典斗地主AI推理能力测试&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;联系作者: 93506222@qq.com</h1>
+    <div class="status">
+      <span>阶段：<span id="phase-label">待开始</span></span>
+      <span>当前玩家：<span id="current-label">无</span></span>
+    </div>
+  </header>
+
+  <section class="table-info">
+    <div>底牌：<span id="bottom-cards">隐藏</span></div>
+    <div>最高叫分：<span id="highest-bid">0</span></div>
+    <div>地主：<span id="landlord-label">未定</span></div>
+    <div>当前倍数：<span id="multiplier-label">1</span></div>
+  </section>
+
+  <div id="hint" class="hint" aria-live="polite"></div>
+
+
+  <main class="table">
+    <section id="hand-C" class="hand-area hand-top-left">
+      <h2><span class="avatar hidden"></span>丙<span class="role-tag"></span></h2>
+      <div class="hand-cards"></div>
+      <div class="hand-tracker"></div>
+      <div class="hand-meta"></div>
+      <div class="hand-controls" data-player="C">
+        <div class="hand-bid-controls">
+          <button type="button" data-action="bid" data-player="C" data-score="0">不叫</button>
+          <button type="button" data-action="bid" data-player="C" data-score="1">1 分</button>
+          <button type="button" data-action="bid" data-player="C" data-score="2">2 分</button>
+          <button type="button" data-action="bid" data-player="C" data-score="3">3 分</button>
+        </div>
+        <div class="hand-play-controls">
+          <button type="button" data-action="play" data-player="C">出牌</button>
+          <button type="button" data-action="pass" data-player="C">不要</button>
+          <button type="button" data-action="clear" data-player="C">取消选择</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="hand-B" class="hand-area hand-top-right">
+      <h2><span class="avatar hidden"></span>乙<span class="role-tag"></span></h2>
+      <div class="hand-cards"></div>
+      <div class="hand-tracker"></div>
+      <div class="hand-meta"></div>
+      <div class="hand-controls" data-player="B">
+        <div class="hand-bid-controls">
+          <button type="button" data-action="bid" data-player="B" data-score="0">不叫</button>
+          <button type="button" data-action="bid" data-player="B" data-score="1">1 分</button>
+          <button type="button" data-action="bid" data-player="B" data-score="2">2 分</button>
+          <button type="button" data-action="bid" data-player="B" data-score="3">3 分</button>
+        </div>
+        <div class="hand-play-controls">
+          <button type="button" data-action="play" data-player="B">出牌</button>
+          <button type="button" data-action="pass" data-player="B">不要</button>
+          <button type="button" data-action="clear" data-player="B">取消选择</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="hand-A" class="hand-area hand-bottom">
+      <h2><span class="avatar hidden"></span>甲<span class="role-tag"></span></h2>
+      <div class="hand-cards"></div>
+      <div class="hand-tracker"></div>
+      <div class="hand-meta"></div>
+      <div class="hand-controls" data-player="A">
+        <div class="hand-bid-controls">
+          <button type="button" data-action="bid" data-player="A" data-score="0">不叫</button>
+          <button type="button" data-action="bid" data-player="A" data-score="1">1 分</button>
+          <button type="button" data-action="bid" data-player="A" data-score="2">2 分</button>
+          <button type="button" data-action="bid" data-player="A" data-score="3">3 分</button>
+        </div>
+        <div class="hand-play-controls">
+          <button type="button" data-action="play" data-player="A">出牌</button>
+          <button type="button" data-action="pass" data-player="A">不要</button>
+          <button type="button" data-action="clear" data-player="A">取消选择</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="center">
+      <div class="maya-tip">Maya提示：</div>
+      <div>当前有效出牌：<span id="last-play">无</span></div>
+      <div>最后出牌者：<span id="last-player">无</span></div>
+      <div>连续不要次数：<span id="pass-count">0</span></div>
+    </section>
+
+    <section id="history-panel" class="panel scroll">
+      <h2>叫分、出牌记录</h2>
+      <ul id="history-list"></ul>
+      <div id="history-empty" class="history-empty">暂无出牌记录</div>
+    </section>
+
+    <section id="result-box" class="result-box">
+      <h2>本局结算</h2>
+      <div id="result-detail">尚未结算</div>
+      <p class="disclaimer">积分仅用于规则测试，无现金价值，不涉及充值、提现或交易</p>
+    </section>
+  </main>
+
+  <section class="controls">
+    <button id="redeal-btn" type="button">重新发牌</button>
+  </section>
+
+  <section class="tabs">
+    <button id="new-game-btn" type="button">新开一局</button>
+    <button id="save-prompt-btn" type="button">保存提示词</button>
+    <button id="copy-btn" type="button">复制提示词</button>
+    <div class="save-area">
+      <button id="save-game-btn" type="button">保存牌局</button>
+      <select id="saved-game-select" title="已保存的牌局"></select>
+      <button id="replay-game-btn" type="button">回放牌局</button>
+      <button id="delete-game-btn" type="button">删除牌局</button>
+      <button id="export-game-btn" type="button">导出牌局</button>
+      <button id="import-game-btn" type="button">导入牌局</button>
+      <input id="import-file-input" type="file" accept=".md,text/markdown,text/plain" class="hidden">
+    </div>
+  </section>
+
+  <section id="prompt-panel" class="panel scroll">
+    <pre id="prompt-text" class="prompt-text"></pre>
+  </section>
+
+  <script src="./cards.js" onerror="(window.DDZ = window.DDZ || {}).__missing = true"></script>
+  <script src="./game.js" onerror="(window.DDZ = window.DDZ || {}).__missing = true"></script>
+  <script src="./prompt.js" onerror="(window.DDZ = window.DDZ || {}).__missing = true"></script>
+  <script src="./ui.js" onerror="(window.DDZ = window.DDZ || {}).__missing = true"></script>
+  <script>
+    (function () {
+      var DDZ0 = window.DDZ;
+      var okAll = !(DDZ0 && DDZ0.__missing) && DDZ0 &&
+                  DDZ0.Cards && DDZ0.Game && DDZ0.Prompt && DDZ0.UI;
+      var probe = document.createElement('div');
+      probe.className = 'ddz-css-probe';
+      document.body.appendChild(probe);
+      var color = getComputedStyle(probe).color.replace(/\s/g, '');
+      var cssOk = color === 'rgb(1,2,3)';
+      probe.remove();
+      if (!okAll || !cssOk) {
+        var box = document.getElementById('fatal');
+        box.textContent = '请保留完整目录及全部 CSS、JS 文件';
+        document.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      } else {
+        DDZ0.UI.init();
+      }
+    })();
+  </script>
+</body>
+</html>

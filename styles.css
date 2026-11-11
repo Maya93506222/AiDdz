@@ -1,0 +1,509 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 640px;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f4f1e8;
+  color: #222;
+}
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button:disabled,
+button.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fatal {
+  display: none;
+  padding: 10px 16px;
+  background: #ffe1e1;
+  color: #a00;
+  font-weight: bold;
+}
+
+.fatal:not(:empty) {
+  display: block;
+}
+
+.topbar,
+.table-info,
+.controls,
+.tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #d8d0bb;
+}
+
+/* 保存/回放按钮组靠最右 */
+.save-area {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.save-area select {
+  max-width: 260px;
+  font: inherit;
+  padding: 5px 6px;
+}
+
+/* 新开一局整行按钮与下拉框用小字体，避免窗口缩小时换行 */
+.tabs button,
+.tabs select {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.topbar h1 {
+  margin: 0 24px 0 0;
+  font-size: 20px;
+}
+
+.status {
+  display: flex;
+  gap: 20px;
+}
+
+.table {
+  display: grid;
+  grid-template-columns: 32% 32% 32%;
+  justify-content: space-between;
+  align-items: start;
+  padding: 16px;
+  row-gap: 12px;
+}
+
+.hand-area {
+  position: relative;
+  min-height: 195px;
+  padding: 10px;
+  border: 2px solid #b9ad90;
+  border-radius: 10px;
+  background: #e2f0e4;
+  /* 牌宽随窗口宽度自适应（34px ~ 46px），字号等按比例联动 */
+  --card-w: clamp(34px, 3.6vw, 46px);
+}
+
+/* 座次：丙左上、乙右上、甲下方居中 */
+.hand-top-left {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.hand-top-right {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.hand-bottom {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* 出牌记录在甲左侧、本局结算在甲右侧 */
+#history-panel {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+}
+
+#history-panel h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+#history-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.history-empty {
+  color: #999;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+#result-box {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+}
+
+.hand-area.current {
+  border-color: #d33;
+  box-shadow: 0 0 0 3px rgba(211, 51, 51, 0.18);
+}
+
+/* 行动标记显示在方框水平中间，与名字同行 */
+.hand-area.current h2::after {
+  content: "当前玩家";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #d33;
+  font-size: inherit;
+  font-weight: bold;
+}
+
+.hand-area h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+/* 玩家头像：地主戴瓜皮帽，农民戴草帽 */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border-radius: 50%;
+  font-size: 15px;
+  vertical-align: middle;
+  background: #eee;
+}
+
+.avatar.landlord {
+  background: #fdeecb;
+  border: 1px solid #d9a441;
+}
+
+.avatar.farmer {
+  background: #ddefd4;
+  border: 1px solid #7fa878;
+}
+
+/* 名字旁的身份标签：地主金色、农民绿色 */
+.role-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 0 6px;
+  height: 20px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.role-tag.landlord {
+  color: #8a5a00;
+  background: #fdeecb;
+  border: 1px solid #d9a441;
+}
+
+.role-tag.farmer {
+  color: #2f6b34;
+  background: #ddefd4;
+  border: 1px solid #7fa878;
+}
+
+.hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  min-height: 44px;
+}
+
+/* 叠放：除最后一张外，每张牌只露出左上角角标 */
+.hand-cards .card:not(:last-child) {
+  margin-right: -18px;
+}
+
+.hand-tracker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #c9bfa4;
+  min-height: 22px;
+}
+
+.hand-tracker:empty {
+  display: none;
+}
+
+.tracker-group {
+  display: inline-flex;
+  gap: 0;
+  align-items: center;
+}
+
+/* 记牌器组内同样叠放，只露左上角角标；组与组之间保留间隔 */
+.tracker-group .card:not(:last-child) {
+  margin-right: -12px;
+}
+
+.card.mini {
+  min-width: 26px;
+  width: 26px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+/* 小牌角标竖排：点数在上、花色在下，与手牌一致 */
+.card.mini .card-corner {
+  top: 1px;
+  left: 2px;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1;
+}
+
+.card.mini .card-rank {
+  font-size: 9px;
+}
+
+.card.mini .card-suit {
+  font-size: 8px;
+}
+
+.card.mini .card-corner-joker {
+  top: 2px;
+  left: 2px;
+  flex-direction: column;
+  gap: 0;
+}
+
+.card.mini .card-corner-joker span {
+  font-size: 6px;
+}
+
+.card {
+  display: inline-block;
+  position: relative;
+  min-width: var(--card-w);
+  width: var(--card-w);
+  height: 44px;
+  padding: 0;
+  border: 1px solid #999;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
+  user-select: none;
+}
+
+/* 左上角角标：点数在上、花色在下，叠放时露出的窄条正好是角标 */
+.card-corner {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+}
+
+.card-rank {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+/* 点数 10 是唯一双字符，收紧字距并去掉末尾余量 */
+.card-rank-ten {
+  letter-spacing: -0.14em;
+  margin-right: -0.14em;
+}
+
+.card-suit {
+  font-size: 0.85em;
+}
+
+/* 大小王：MAYA 四个字母正向竖排 */
+.card-corner-joker {
+  top: 2px;
+  left: 3px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.card-corner-joker span {
+  display: block;
+  line-height: 1;
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.card.red {
+  color: #c00;
+}
+
+.card.black {
+  color: #111;
+}
+
+.card.selected {
+  transform: translateY(-8px);
+  border-color: #06c;
+  box-shadow: 0 3px 8px rgba(0, 102, 204, 0.35);
+}
+
+.card.clickable {
+  cursor: pointer;
+}
+
+.card:not(.clickable) {
+  opacity: 0.9;
+  cursor: default;
+}
+
+.hand-meta {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.hand-controls {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #c9bfa4;
+}
+
+.hand-bid-controls,
+.hand-play-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.hand-controls button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.hand-controls.inactive {
+  opacity: 0.45;
+}
+
+.hand-controls.inactive button {
+  cursor: not-allowed;
+}
+
+.center {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  padding: 12px;
+  border: 1px dashed #b9ad90;
+  border-radius: 10px;
+  background: #faf7ec;
+  text-align: center;
+}
+
+.maya-tip {
+  color: #d33;
+  font-weight: bold;
+}
+
+/* 中间框内的小牌与文字高度居中对齐 */
+.center .card {
+  vertical-align: middle;
+}
+
+.hint {
+  display: none;
+  padding: 6px 16px;
+  color: #a33;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.hint:not(:empty) {
+  display: block;
+  background: #fdecea;
+  border-bottom: 1px solid #ecc;
+}
+
+.panel {
+  margin: 12px 16px;
+  padding: 12px;
+  border: 1px solid #d8d0bb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.scroll {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.hidden {
+  display: none;
+}
+
+.prompt-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0 0 10px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* 提示词内的牌面文字只着色，不带牌框 */
+.prompt-text .card {
+  display: inline;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  font-weight: normal;
+}
+
+.prompt-text .card.red {
+  color: #c00;
+}
+
+.prompt-text .card.black {
+  color: #111;
+}
+
+.result-box {
+  margin: 12px 16px 24px;
+  padding: 12px;
+  border: 1px solid #d8d0bb;
+  border-radius: 8px;
+  background: #fffdf6;
+}
+
+.result-box h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.disclaimer {
+  margin: 8px 0 0;
+  color: #666;
+  font-size: 12px;
+}
+
+.ddz-css-probe {
+  color: rgb(1, 2, 3);
+}

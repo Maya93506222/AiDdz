@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>经典斗地主规则</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1f2328;
+    --muted: #57606a;
+    --accent: #c0392b;
+    --line: #e5e7eb;
+    --th: #f0f2f5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 64px; }
+  header {
+    background: linear-gradient(135deg, #c0392b, #8e1f14);
+    color: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  header h1 { margin: 0 0 6px; font-size: 26px; }
+  header p { margin: 0; opacity: .92; font-size: 14px; }
+  section {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 18px;
+    margin: 0 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h2 .num {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 13px;
+    padding: 1px 8px;
+  }
+  h3 { font-size: 15px; margin: 16px 0 8px; color: var(--accent); }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--th); font-weight: 600; white-space: nowrap; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  code {
+    background: #eef1f4;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 13px;
+  }
+  .card { color: var(--accent); font-weight: 600; }
+  .note { color: var(--muted); font-size: 13px; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>经典斗地主规则</h1>
+  <p>三人经典斗地主 · 一副 54 张牌 · 单局结算</p>
+</header>
+
+<section>
+  <h2><span class="num">1</span>游戏概览</h2>
+  <table>
+    <tr><th>项目</th><th>内容</th></tr>
+    <tr><td>人数</td><td>3 人</td></tr>
+    <tr><td>阵营</td><td>1 名地主 对 2 名农民</td></tr>
+    <tr><td>用牌</td><td>一副 54 张（52 张普通牌 + 小王 + 大王）</td></tr>
+    <tr><td>玩家代号</td><td>甲、乙、丙；座位顺序固定为甲 → 乙 → 丙 → 甲（逆时针）</td></tr>
+    <tr><td>游戏目标</td><td>地主先出完手牌则地主胜；任一农民先出完则农民阵营胜</td></tr>
+    <tr><td>牌局组织</td><td>单局结算，不累计多局积分</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">2</span>牌与点数</h2>
+  <h3>2.1 牌的组成</h3>
+  <ul>
+    <li>普通牌：4 种花色 <span class="card">♠ ♥ ♣ ♦</span>，每种 13 个点数，共 52 张。</li>
+    <li>特殊牌：小王、大王各 1 张。</li>
+    <li>合计 54 张，每张牌唯一。</li>
+  </ul>
+  <p>点数由小到大：<code>3 &lt; 4 &lt; 5 &lt; 6 &lt; 7 &lt; 8 &lt; 9 &lt; 10 &lt; J &lt; Q &lt; K &lt; A &lt; 2 &lt; 小王 &lt; 大王</code></p>
+  <h3>2.2 大小规则</h3>
+  <ul>
+    <li>花色<b>不参与</b>大小比较。</li>
+    <li>大小王不是同一点数，不能组成对子。</li>
+    <li>顺子、连对、飞机的连续主体只能使用 <code>3</code> 到 <code>A</code>；<code>2</code>、小王、大王不得进入连续主体。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">3</span>发牌</h2>
+  <ol>
+    <li>洗牌后，甲、乙、丙各发 17 张，剩余 3 张作为底牌。</li>
+    <li>叫分阶段底牌隐藏。</li>
+    <li>确定地主后，3 张底牌公开并归入地主手牌，地主共 20 张，两名农民各 17 张。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">4</span>叫分与确定地主</h2>
+  <p>采用<b>一轮叫分</b>：</p>
+  <ol>
+    <li>每局随机确定首位叫分者。</li>
+    <li>三家按座位顺序<b>各叫一次</b>，可选 <code>不叫(0) / 1 分 / 2 分 / 3 分</code>。</li>
+    <li>后叫者若叫分，必须<b>高于当前最高分</b>；不叫不影响后续玩家。</li>
+    <li>有人叫 <code>3 分</code> 时立即结束叫分，该玩家成为地主。</li>
+    <li>未出现 <code>3 分</code> 时，三家均叫完后由最高分者成为地主。</li>
+    <li>三家均不叫时本局作废，底牌不发放，重新洗牌发牌并重新随机首位叫分者。</li>
+    <li>确定地主后进入出牌阶段，由地主先出牌。</li>
+  </ol>
+  <p class="note">与其他常见口径的差异见第 12 节。</p>
+</section>
+
+<section>
+  <h2><span class="num">5</span>出牌顺序与回合</h2>
+  <ol>
+    <li>地主首先出牌，之后按 <code>甲 → 乙 → 丙 → 甲</code> 逆时针轮转。</li>
+    <li><b>自由出牌</b>：当前玩家获得自由出牌权时，必须出任意合法牌型，不能选择「不要」。</li>
+    <li><b>跟牌</b>：必须出与上家有效牌同牌型、同结构、同附件形式、同总张数且主体更大的牌；也可选择「不要」。</li>
+    <li><b>连续两家不要</b>：最后成功出牌者重新获得自由出牌权，开始新一轮。</li>
+    <li><b>一轮</b>指从一次领出开始，到连续两家不要（或牌局结束）为止；期间可能包含多次「出牌 / 压过 / 不要」。</li>
+    <li>任意一家出完手牌立即结束牌局，不再让后续玩家行动。</li>
+    <li>已生效的叫分、出牌和「不要」不可撤销。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">6</span>牌型完整定义</h2>
+  <h3>6.1 牌型总表</h3>
+  <table>
+    <tr><th>牌型</th><th>构成</th><th>总张数</th><th>比较主体</th><th>示例</th></tr>
+    <tr><td>单张</td><td>任意 1 张</td><td>1</td><td>该牌点数</td><td><span class="card">♠3</span></td></tr>
+    <tr><td>对子</td><td>2 张同点数</td><td>2</td><td>对子点数</td><td><span class="card">♠3 ♥3</span></td></tr>
+    <tr><td>三张</td><td>3 张同点数</td><td>3</td><td>三张点数</td><td><span class="card">♠3 ♥3 ♣3</span></td></tr>
+    <tr><td>三带一</td><td>3 张同点数 + 1 张不同点数单牌</td><td>4</td><td>三张点数</td><td><code>333 + ♠4</code></td></tr>
+    <tr><td>三带二</td><td>3 张同点数 + 1 个不同点数对子</td><td>5</td><td>三张点数</td><td><code>333 + 44</code></td></tr>
+    <tr><td>顺子</td><td>至少 5 张点数连续的单牌</td><td>≥5</td><td>最大连续点数</td><td><span class="card">♠3 ♥4 ♣5 ♦6 ♠7</span></td></tr>
+    <tr><td>连对</td><td>至少 3 组点数连续的对子</td><td>≥6（3 对起）</td><td>最大连续点数</td><td><code>33 44 55</code></td></tr>
+    <tr><td>飞机不带</td><td>至少 2 组点数连续的三张</td><td>3n，n≥2</td><td>最大连续点数</td><td><code>333444</code></td></tr>
+    <tr><td>飞机带单</td><td>连续 n 组三张 + n 张单牌附件</td><td>4n，n≥2</td><td>最大连续点数</td><td><code>333444 + 5 + 6</code></td></tr>
+    <tr><td>飞机带对</td><td>连续 n 组三张 + n 个不同点数对子附件</td><td>5n，n≥2</td><td>最大连续点数</td><td><code>333444 + 55 + 66</code></td></tr>
+    <tr><td>四带二单</td><td>4 张同点数 + 2 张单牌</td><td>6</td><td>四张点数</td><td><code>5555 + 3 + 4</code></td></tr>
+    <tr><td>四带二对</td><td>4 张同点数 + 2 个不同点数对子</td><td>8</td><td>四张点数</td><td><code>5555 + 33 + 44</code></td></tr>
+    <tr><td>炸弹</td><td>4 张同点数</td><td>4</td><td>四张点数</td><td><code>5555</code></td></tr>
+    <tr><td>火箭</td><td>小王 + 大王</td><td>2</td><td>最大</td><td><code>小王 大王</code></td></tr>
+  </table>
+
+  <h3>6.2 连续牌型的共同限制</h3>
+  <ul>
+    <li>连续主体只允许 <code>3</code> 到 <code>A</code>，<code>2</code>、小王、大王不得进入主体。</li>
+    <li>顺子最少 5 张；<code>10 J Q K A</code> 合法，<code>J Q K A 2</code> 非法。</li>
+    <li>连对最少 3 对；断档、2 对、含 <code>2</code>/王均非法。</li>
+    <li>飞机主体最少 2 组连续三张，且每组三张点数连续。</li>
+  </ul>
+
+  <h3>6.3 附件规则</h3>
+  <ol>
+    <li><b>三带一</b>的附件单牌必须与三张主体点数不同。</li>
+    <li><b>三带二</b>的附件对子必须与三张主体点数不同。</li>
+    <li><b>四张同点数牌单独选择时只识别为炸弹</b>，不识别为三带一。</li>
+    <li><b>飞机带单</b>总张数为 <code>4 × 三组组数</code>；附件按独立单牌计数，附件之间允许同点数，也允许使用主体点数多余的第四张牌。例如 <code>33334445</code> 可按主体 <code>333444</code>、附件 <code>3</code> 与 <code>5</code> 解释。</li>
+    <li><b>飞机带对</b>总张数为 <code>5 × 三组组数</code>；附件必须能拆成与组数相同数量的<b>不同点数对子</b>，大小王不能组成对子。</li>
+    <li><b>四带二单</b>的两张附件允许同点数（如 <code>5555 + 33</code>），也允许不同点数。</li>
+    <li><b>四带二对</b>的两个对子点数必须不同。</li>
+    <li><b>四带二不是炸弹</b>，不触发炸弹倍数。</li>
+    <li>多张牌只是「包含」炸弹或火箭，不代表整组牌属于炸弹或火箭，例如 <code>5555 + ♠3</code>、<code>小王 大王 ♠3</code> 都不是特殊牌型。</li>
+  </ol>
+
+  <h3>6.4 多解释牌型</h3>
+  <p>同一组牌可能有多种合法解释，按以下固定优先级确定：</p>
+  <ul>
+    <li><b>领出时</b>：火箭/炸弹优先 → 无附件牌型优先于带附件牌型 → 主体连续组数多者优先 → 主体点数高者优先 → 按 6.1 节表格顺序靠前者优先。</li>
+    <li><b>跟牌时</b>：优先选择「与目标同牌型、同结构、同附件、同张数且主体最小可压过」的解释；没有普通解释才用炸弹；炸弹之间选能压过的最低点数；最后才用火箭。</li>
+    <li>后续比较以选定的解释为准。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">7</span>牌型比较</h2>
+  <ol>
+    <li>普通牌只能由<b>相同牌型、相同结构长度、相同附件形式、相同总张数</b>且主体点数更大的牌压过。</li>
+    <li>三带一与三带二不能互压；飞机不带、带单、带对不能互压；四带二单与四带二对不能互压。</li>
+    <li>不同长度的顺子、连对、飞机不能互压。</li>
+    <li>炸弹可压过任何普通牌；炸弹之间只有点数更大的炸弹才能压过，同点数炸弹不能互压。</li>
+    <li>火箭最大，可压过包括炸弹在内的任何牌型；任何牌型都不能压过火箭。</li>
+    <li>普通牌不能压过炸弹或火箭。</li>
+    <li>四带二单/四带二对属于普通牌型，按四张主体点数比较，不享受炸弹压制规则。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">8</span>胜负判定</h2>
+  <ul>
+    <li>地主先出完所有手牌：<b>地主胜</b>。</li>
+    <li>任意一名农民先出完所有手牌：<b>农民阵营胜</b>（两名农民同阵营，一人出完即全胜）。</li>
+    <li>出牌后手牌为空立即结束，不再继续当前轮次。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">9</span>计分</h2>
+  <h3>9.1 基础量</h3>
+  <ul>
+    <li><code>B</code>：本局最高叫分（1、2 或 3）。</li>
+    <li><code>M</code>：最终倍数，初始为 1。</li>
+  </ul>
+  <h3>9.2 倍数规则</h3>
+  <ul>
+    <li>每<b>成功打出</b>一个炸弹或火箭，倍数 <code>×2</code>，可累计，不设上限。</li>
+    <li>四带二、三带一等包含四张同点数的普通牌型不增加倍数。</li>
+    <li><b>春天</b>：地主获胜，且两名农民整局均未成功出过牌，倍数 <code>×2</code>。</li>
+    <li><b>反春</b>：农民获胜，且地主整局恰好只成功出过一次牌，倍数 <code>×2</code>。</li>
+    <li>「不要」不算成功出牌。</li>
+    <li>春天与反春互斥，不会在同一局同时出现。</li>
+  </ul>
+  <h3>9.3 得分公式</h3>
+  <table>
+    <tr><th>结果</th><th>地主得分</th><th>农民甲得分</th><th>农民乙得分</th></tr>
+    <tr><td>地主胜</td><td><code>+2BM</code></td><td><code>-BM</code></td><td><code>-BM</code></td></tr>
+    <tr><td>农民胜</td><td><code>-2BM</code></td><td><code>+BM</code></td><td><code>+BM</code></td></tr>
+  </table>
+  <p>三家得分之和恒为 0。</p>
+  <h3>9.4 示例</h3>
+  <p>叫分 3 分，打出 1 个炸弹后地主获胜，无春天：<code>B=3, M=2</code>。</p>
+  <ul>
+    <li>地主：<code>+2 × 3 × 2 = +12</code></li>
+    <li>两名农民各：<code>-3 × 2 = -6</code></li>
+  </ul>
+  <p>合计 <code>12 - 6 - 6 = 0</code>。</p>
+</section>
+
+<section>
+  <h2><span class="num">10</span>完整一局流程</h2>
+  <ol>
+    <li>洗牌，三家各 17 张，留 3 张底牌。</li>
+    <li>随机确定首位叫分者，进入叫分阶段。</li>
+    <li>三家各叫一次；叫 3 分或三家叫完后确定地主；全不叫则重新发牌。</li>
+    <li>公开 3 张底牌并加入地主手牌，地主共 20 张。</li>
+    <li>地主先出牌，进入出牌阶段。</li>
+    <li>每轮：自由领出 → 后续玩家依次压过或不要 → 连续两家不要则交还最后出牌者自由领出。</li>
+    <li>打出的炸弹/火箭即时累计倍数。</li>
+    <li>任意一家出完手牌，立即结算春天/反春、最终倍数与三家得分。</li>
+    <li>新一局重新洗牌发牌，不累计上一局数据。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">11</span>术语速查</h2>
+  <table>
+    <tr><th>术语</th><th>含义</th></tr>
+    <tr><td>底牌</td><td>发牌后剩余的 3 张牌，确定地主后公开并归地主</td></tr>
+    <tr><td>叫分</td><td>0/1/2/3 分，决定地主与基础分 B</td></tr>
+    <tr><td>自由出牌权</td><td>无需压牌、可出任意合法牌型的状态</td></tr>
+    <tr><td>领出</td><td>一轮中第一次出牌</td></tr>
+    <tr><td>跟牌</td><td>压过当前有效牌或选择不要</td></tr>
+    <tr><td>一轮</td><td>一次领出到连续两家不要或牌局结束之间的过程</td></tr>
+    <tr><td>主体点数</td><td>用于比较大小的点数，如顺子最大牌、三张/四张点数</td></tr>
+    <tr><td>结构长度</td><td>连续组数或张数，如顺子 5 张、飞机 2 组</td></tr>
+    <tr><td>附件</td><td>三带一/三带二/飞机带牌/四带二中额外携带的牌</td></tr>
+    <tr><td>倍数 M</td><td>炸弹、火箭、春天、反春累计后的总倍数</td></tr>
+    <tr><td>春天</td><td>地主胜且两农民均未成功出牌</td></tr>
+    <tr><td>反春</td><td>农民胜且地主恰好只成功出过一次牌</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">12</span>统一口径说明</h2>
+  <p>以下条目各平台可能不同，本规则采用左列口径：</p>
+  <table>
+    <tr><th>条目</th><th>本规则口径</th><th>常见其他口径</th></tr>
+    <tr><td>叫分</td><td>一轮，三家各叫一次，后叫必须更高，叫 3 立即结束</td><td>循环抢地主、可重复叫分、叫满 3 家后再定</td></tr>
+    <tr><td>飞机</td><td>支持不带、带单、带对三种，2 组起，连续主体只到 A</td><td>部分平台不允许带对，或允许 2 进入连续</td></tr>
+    <tr><td>飞机带单附件</td><td>允许同点、允许主体第四张余牌作附件</td><td>部分平台要求附件点数互不相同且不得与主体同点</td></tr>
+    <tr><td>四带二</td><td>区分「四带二单」与「四带二对」，都不是炸弹</td><td>部分平台把四带二归入炸弹类或只支持一种</td></tr>
+    <tr><td>四张同点单独出</td><td>只识别为炸弹，不识别为三带一</td><td>部分平台允许当作三带一</td></tr>
+    <tr><td>春天</td><td>地主胜且两农民均未成功出牌</td><td>描述常与反春颠倒或不完整</td></tr>
+    <tr><td>反春</td><td>农民胜且地主恰好只成功出过一次牌</td><td>同上</td></tr>
+    <tr><td>倍数</td><td>炸弹/火箭/春天/反春各自 ×2，可累计不封顶</td><td>部分平台有倍数上限或不同加成</td></tr>
+    <tr><td>计分</td><td><code>+2BM / -BM / -BM</code> 与零和</td><td>部分平台有底分、加倍、任务分等</td></tr>
+    <tr><td>多解释牌型</td><td>固定优先级，跟牌取最小可压过主体</td><td>多数平台未明确</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">13</span>不在本规则范围内</h2>
+  <p>以下玩法不属于本规则定义的经典斗地主：</p>
+  <ul>
+    <li>癞子、不洗牌、明牌叫地主、换牌等特殊玩法。</li>
+    <li>抢地主、加倍、超级加倍、任务加成。</li>
+    <li>多局累计积分、赛事、排位、锦标赛。</li>
+  </ul>
+</section>
+
+<footer>经典斗地主规则 · 精炼版 · 规则要点完整保留</footer>
+</div>
+</body>
+</html>
