@@ -392,7 +392,10 @@
     } else if (state.phase === 'redeal') {
       display = '三家均不叫，请重新发牌';
     } else if (state.phase === 'finished') {
-      display = cachedPrompt + '\n\n[牌局已结束，对应已结束牌局的最后决策点]';
+      // 正常打到结束时缓存里是最后一次决策的提示词；导入或回放一局已结束的牌局时缓存为空。
+      display = cachedPrompt
+        ? cachedPrompt + '\n\n[牌局已结束，对应已结束牌局的最后决策点]'
+        : '牌局已结束。导入或回放的已结束牌局不会生成提示词，没有可复制的内容。';
     }
     renderPromptText(display);
     dom.copyBtn.disabled = !cachedPrompt;
@@ -525,17 +528,12 @@
     }
   }
 
+  // 只存提示词正文（与「复制提示词」复制出的内容相同），不附牌局数据，
+  // 因此保存的文件不含另两家手牌，可以直接发给外部 AI；它也不能用来导入牌局。
   function savePrompt() {
     var text = cachedPrompt;
     if (!text) return;
-    var lines = ['# 斗地主推理提示词', '', text];
-    if (currentState) {
-      lines.push('', '## 状态数据（供导入还原）', '');
-      lines.push('```json');
-      lines.push(JSON.stringify(currentState, null, 2));
-      lines.push('```', '');
-    }
-    var md = lines.join('\n');
+    var md = text;
     var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -593,14 +591,20 @@
     }
   }
 
-  function savedLabel(item) {
-    var s = item.state;
-    var landlord = s.landlordId ? nameOf(s, s.landlordId) : '地主未定';
-    var counts = ['A', 'B', 'C'].map(function (id) {
-      var p = s.players.filter(function (x) { return x.id === id; })[0];
-      return nameOf(s, id) + p.handIds.length;
-    }).join('/');
-    return '#' + item.no + ' ' + item.time + ' ' + landlord + ' 剩牌 ' + counts;
+  // 生成存档下拉框里一条的文字。单条存档数据损坏时不抛错（否则页面启动会中断），
+  // 显示为「已损坏」留在列表里，让用户看得到、也能删掉。
+  function savedLabel(item, index) {
+    try {
+      var s = item.state;
+      var landlord = s.landlordId ? nameOf(s, s.landlordId) : '地主未定';
+      var counts = ['A', 'B', 'C'].map(function (id) {
+        var p = s.players.filter(function (x) { return x.id === id; })[0];
+        return nameOf(s, id) + p.handIds.length;
+      }).join('/');
+      return '#' + item.no + ' ' + item.time + ' ' + landlord + ' 剩牌 ' + counts;
+    } catch (e) {
+      return '#' + (index + 1) + '（存档已损坏，可删除）';
+    }
   }
 
   function refreshSavedList() {
@@ -615,7 +619,7 @@
     list.forEach(function (item, i) {
       var opt = document.createElement('option');
       opt.value = String(i);
-      opt.appendChild(document.createTextNode(savedLabel(item)));
+      opt.appendChild(document.createTextNode(savedLabel(item, i)));
       dom.savedSelect.appendChild(opt);
     });
     dom.replayBtn.disabled = !list.length;
@@ -640,14 +644,15 @@
   function replaySavedGame() {
     var idx = Number(dom.savedSelect.value);
     var list = readSavedGames();
-    var item = list[idx];
-    if (!item || !item.state) {
+    if (!(idx >= 0) || idx >= list.length) {
       showHint('请先保存并选择要回放的牌局');
       return;
     }
-    var result = Game.loadState(item.state);
+    // 选中的存档即使已损坏，也交给 loadState 校验，由它给出具体原因。
+    var item = list[idx];
+    var result = Game.loadState(item && item.state);
     if (!result.ok) {
-      showHint('回放失败：存档数据无效');
+      showHint('回放失败：' + result.error.message);
       return;
     }
     selectedCards.clear();
@@ -664,39 +669,23 @@
       return;
     }
     var item = list[idx];
-    if (!window.confirm('确定删除 ' + savedLabel(item) + ' 吗？')) return;
+    if (!window.confirm('确定删除 ' + savedLabel(item, idx) + ' 吗？')) return;
     list.splice(idx, 1);
-    list.forEach(function (it, i) { it.no = i + 1; });
+    // 已损坏的存档可能连对象都不是，重新编号时跳过，免得删除中途报错。
+    list.forEach(function (it, i) {
+      if (it && typeof it === 'object') it.no = i + 1;
+    });
     writeSavedGames(list);
     refreshSavedList();
-    showHint('已删除牌局（' + item.no + ' 号存档）');
+    var deletedNo = item && typeof item === 'object' && item.no ? item.no : idx + 1;
+    showHint('已删除牌局（' + deletedNo + ' 号存档）');
   }
 
-  function buildExportMd(state) {
-    var lines = [];
-    lines.push('# 斗地主牌局存档', '');
-    lines.push('- 导出时间：' + new Date().toLocaleString('zh-CN', { hour12: false }));
-    lines.push('- 阶段：' + (PHASE_TEXT[state.phase] || state.phase));
-    lines.push('- 地主：' + (state.landlordId ? nameOf(state, state.landlordId) : '未定'));
-    ['A', 'B', 'C'].forEach(function (id) {
-      var p = state.players.filter(function (x) { return x.id === id; })[0];
-      lines.push('- ' + nameOf(state, id) + '：' + roleText(p.role) +
-        '，剩 ' + p.handIds.length + ' 张，手牌：' + fmtCards(p.handIds, '、'));
-    });
-    lines.push('- 当前行动：' + (state.currentPlayerId
-      ? nameOf(state, state.currentPlayerId) : '无'));
-    lines.push('- 当前倍数：' + state.multiplier);
-    lines.push('', '## 状态数据（供导入还原）', '');
-    lines.push('```json');
-    lines.push(JSON.stringify(state, null, 2));
-    lines.push('```', '');
-    return lines.join('\n');
-  }
-
+  // 导出为纯 JSON 存档：文件内容就是整局状态，含三家手牌，不要发给外部 AI。
   function exportGame() {
     if (!currentState) return;
-    var md = buildExportMd(currentState);
-    var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    var json = JSON.stringify(currentState, null, 2) + '\n';
+    var blob = new Blob([json], { type: 'application/json;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
@@ -704,12 +693,12 @@
     var pad = function (n) { return (n < 10 ? '0' : '') + n; };
     a.download = '斗地主牌局_' + ts.getFullYear() + pad(ts.getMonth() + 1) +
       pad(ts.getDate()) + '_' + pad(ts.getHours()) + pad(ts.getMinutes()) +
-      pad(ts.getSeconds()) + '.md';
+      pad(ts.getSeconds()) + '.json';
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    showHint('已导出牌局文件（.md）');
+    showHint('已导出牌局文件（.json）');
   }
 
   function importGame() {
@@ -722,78 +711,32 @@
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function () {
-      var text = String(reader.result);
-      if (text.slice(0, 200).indexOf('# 斗地主牌局存档') >= 0) {
-        importGameMd(text);
-      } else {
-        importPromptMd(text);
-      }
+      importGameJson(String(reader.result));
     };
     reader.readAsText(file, 'utf-8');
   }
 
-  function importGameMd(text) {
-    var m = /```json\s*([\s\S]*?)```/.exec(text);
-    if (!m) {
-      showHint('导入失败：文件中未找到状态数据代码块');
-      return;
-    }
+  // 只认「导出牌局」生成的纯 JSON 存档；提示词文件不含另两家手牌，还原不出完整牌局。
+  function importGameJson(text) {
     var state;
     try {
-      state = JSON.parse(m[1]);
+      // 防御性处理：文本开头若残留 BOM（JSON.parse 遇到会报错），先去掉。
+      state = JSON.parse(text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text);
     } catch (e) {
-      showHint('导入失败：状态数据格式错误');
+      showHint('导入失败：文件内容不是有效的 JSON，请用「导出牌局」生成的 .json 文件导入');
       return;
     }
+    // 校验不通过时 loadState 不改动牌局（tests.js「Game: 导入校验」用例 4–8 断言）；
+    // 这里也在成功之后才清选牌、换提示词缓存，失败时界面保持原样。
     var result = Game.loadState(state);
     if (!result.ok) {
-      showHint('导入失败：牌局数据无效');
+      showHint('导入失败：' + result.error.message);
       return;
     }
     selectedCards.clear();
     cachedPrompt = DDZ.Prompt.updatePromptCache('', result.state);
     render(result.state);
     showHint('已导入牌局');
-  }
-
-  function importPromptMd(text) {
-    var stateIdx = text.indexOf('## 状态数据（供导入还原）');
-    var headText = stateIdx >= 0 ? text.slice(0, stateIdx) : text;
-    var body = headText
-      .replace(/^# 斗地主推理提示词[ \t]*\r?\n\s*/, '')
-      .replace(/\s+$/, '');
-    if (!body) {
-      showHint('导入失败：提示词内容为空');
-      return;
-    }
-    cachedPrompt = body;
-    if (stateIdx < 0) {
-      renderPromptText(cachedPrompt);
-      dom.copyBtn.disabled = false;
-      dom.savePromptBtn.disabled = false;
-      showHint('已导入提示词');
-      return;
-    }
-    var m = /```json\s*([\s\S]*?)```/.exec(text.slice(stateIdx));
-    if (!m) {
-      showHint('导入失败：状态数据格式错误');
-      return;
-    }
-    var state;
-    try {
-      state = JSON.parse(m[1]);
-    } catch (e) {
-      showHint('导入失败：状态数据格式错误');
-      return;
-    }
-    var result = Game.loadState(state);
-    if (!result.ok) {
-      showHint('导入失败：牌局数据无效');
-      return;
-    }
-    selectedCards.clear();
-    render(result.state);
-    showHint('已导入提示词并恢复牌局');
   }
 
   function startNewGame() {

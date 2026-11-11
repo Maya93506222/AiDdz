@@ -167,7 +167,7 @@ button.disabled {
   font-size: 16px;
 }
 
-/* 玩家头像：地主戴瓜皮帽，农民戴草帽 */
+/* 玩家头像：地主显示金元宝图标，农民显示草帽图标（图标字符见 ui.js renderHand） */
 .avatar {
   display: inline-flex;
   align-items: center;
@@ -330,7 +330,7 @@ button.disabled {
   font-size: 0.85em;
 }
 
-/* 大小王：MAYA 四个字母正向竖排 */
+/* 大小王：J、O、K 三个字母正向竖排 */
 .card-corner-joker {
   top: 2px;
   left: 3px;

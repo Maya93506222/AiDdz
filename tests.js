@@ -1243,3 +1243,216 @@ test('Cards: 比较 用例 4 多解释跟牌采用最小可压过主体', () => 
   assert.strictEqual(selected.type, 'plane_single');
   assert.strictEqual(selected.rank, 5);
 });
+
+// ---------------------------------------------------------------------------
+// 导入校验：Game.loadState 必须按规则从发牌重演，数据不对就拒绝且不动原局面。
+// 正例只用两种真实局面：公开命令真实打完的整局，以及磁盘上的残局存档文件；
+// 现有注入夹具（每家几张牌、handAfter 写死）按规则必然不一致，不能当正例。
+// ---------------------------------------------------------------------------
+
+// 用公开命令真实打完一整局：甲叫 3 分当地主，每轮领出最小单张，乙丙都不要，
+// 直到甲出完——会产生 new_round、春天 multiplier 和 finish 等派生记录。
+function playSpringGame() {
+  Game.newGame(randomForDeck(Cards.createDeck(), 0));
+  Game.bid('A', 3);
+  for (let guard = 0; guard < 200; guard++) {
+    const s = Game.getState();
+    if (s.phase === 'finished') break;
+    const cur = s.currentPlayerId;
+    if (s.lastPlay === null) {
+      const hand = s.players.filter(function (p) { return p.id === cur; })[0].handIds;
+      assert.strictEqual(Game.play(cur, [hand[hand.length - 1]]).ok, true);
+    } else {
+      assert.strictEqual(Game.pass(cur).ok, true);
+    }
+  }
+  const done = Game.getState();
+  assert.strictEqual(done.phase, 'finished');
+  return done;
+}
+
+// 与 ui.js 导入相同的取法：去掉可能的 BOM，整个文件按 JSON 解析。
+function readArchiveState(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  return JSON.parse(text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text);
+}
+
+const ARCHIVE_FILE = '经典斗地主残局.json';
+
+function clone(v) {
+  return JSON.parse(JSON.stringify(v));
+}
+
+// 先把内部状态设成一个已知局面，再调用 loadState(bad)：
+// 必须被拒绝、不抛异常、events 为空，且内部状态与调用前完全相同。
+function assertImportRejected(bad, messageParts) {
+  playSpringGame();
+  const before = Game.getState();
+  const result = Game.loadState(bad);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.error.code, 'INVALID_SAVE');
+  assert.strictEqual(typeof result.error.message, 'string');
+  assert.ok(result.error.message.length > 0);
+  assert.deepStrictEqual(result.events, []);
+  assert.deepStrictEqual(Game.getState(), before);
+  (messageParts || []).forEach(function (part) {
+    assert.ok(result.error.message.includes(part),
+      '错误原因应包含「' + part + '」，实际：' + result.error.message);
+  });
+  return result;
+}
+
+test('Game: 导入校验 用例 1 真实打完的整局可以载入且原样还原', () => {
+  const finished = playSpringGame();
+  Game.newGame(function () { return 0; });
+  const result = Game.loadState(clone(finished));
+  assert.strictEqual(result.ok, true);
+  assert.deepStrictEqual(result.events, []);
+  assert.deepStrictEqual(Game.getState(), finished);
+  assert.strictEqual(finished.result.multiplierEvents[0].reason, 'spring');
+});
+
+test('Game: 导入校验 用例 2 残局存档文件可以载入，发牌记录未排序也算对', () => {
+  const file = readArchiveState(ARCHIVE_FILE);
+  // 判别现场：文件里甲的初始手牌没有按大小排，顺序敏感的比较会在这里拒绝。
+  assert.notDeepStrictEqual(file.history[0].initialHands.A,
+    Cards.sortCards(file.history[0].initialHands.A));
+  const result = Game.loadState(clone(file));
+  assert.strictEqual(result.ok, true, result.error && result.error.message);
+  const loaded = Game.getState();
+  assert.strictEqual(loaded.currentPlayerId, 'C');
+  assert.strictEqual(loaded.history.length, file.history.length);
+  loaded.players.forEach(function (p, i) {
+    assert.deepStrictEqual(p.handIds, Cards.sortCards(file.players[i].handIds));
+  });
+  // 载入的是按规则重演出的规范状态，不是文件原对象。
+  assert.deepStrictEqual(loaded.history[0].initialHands.A,
+    Cards.sortCards(file.history[0].initialHands.A));
+  // 底牌保持文件里的顺序（♥7 ♣2 ♦7 未按大小排；排序后会变成 ♣2 ♥7 ♦7）。
+  assert.notDeepStrictEqual(file.bottomCards, Cards.sortCards(file.bottomCards));
+  assert.deepStrictEqual(loaded.bottomCards, file.bottomCards);
+});
+
+test('Game: 导入校验 用例 3 牌面数组顺序打乱仍可载入', () => {
+  const finished = playSpringGame();
+  const shuffled = clone(finished);
+  shuffled.players.forEach(function (p) { p.handIds.reverse(); });
+  ['A', 'B', 'C'].forEach(function (id) { shuffled.history[0].initialHands[id].reverse(); });
+  // 底牌不打乱：发牌时底牌保持洗牌顺序（不排序），重演照文件顺序还原。
+  Game.newGame(function () { return 0; });
+  const result = Game.loadState(shuffled);
+  assert.strictEqual(result.ok, true, result.error && result.error.message);
+  assert.deepStrictEqual(Game.getState(), finished);
+});
+
+test('Game: 导入校验 用例 4 非对象或缺发牌记录的数据被拒绝且不抛异常', () => {
+  [null, undefined, 'abc', 42, [], {}, { history: 'x' }, { history: [] },
+    { history: [{ type: 'bid' }] }, { history: [{ type: 'deal' }] }
+  ].forEach(function (bad) {
+    assertImportRejected(bad);
+  });
+
+  // 结构合法、但嵌套极深：规范化比较时会栈溢出，必须被兜底拦下而不是抛到界面。
+  const deep = clone(readArchiveState(ARCHIVE_FILE));
+  let node = {};
+  deep.extra = node;
+  for (let d = 0; d < 100000; d++) { node.x = {}; node = node.x; }
+  assertImportRejected(deep, ['格式不对']);
+});
+
+test('Game: 导入校验 用例 4b 发牌记录本身被改写被拒绝', () => {
+  const file = readArchiveState(ARCHIVE_FILE);
+  const bad = clone(file);
+  bad.history[0].note = '手工添加的字段';
+  assertImportRejected(bad, ['第 1 条', '发牌']);
+});
+
+test('Game: 导入校验 用例 5 发牌记录不完整被拒绝', () => {
+  const file = readArchiveState(ARCHIVE_FILE);
+  const bad = clone(file);
+  bad.history[0].initialHands.A.pop();
+  assertImportRejected(bad, ['甲', '17']);
+
+  const dup = clone(file);
+  dup.bottomCards = [dup.bottomCards[0], dup.bottomCards[0], dup.bottomCards[1]];
+  assertImportRejected(dup, ['底牌']);
+});
+
+test('Game: 导入校验 用例 6 历史里有一手不合规则被拒绝并写明第几条', () => {
+  const file = readArchiveState(ARCHIVE_FILE);
+  // 第 6 条：甲本来用 ♥6 压丙的 ♥5，改成 ♥3（甲确有此牌）就压不过。
+  const early = clone(file);
+  assert.strictEqual(early.history[5].seq, 6);
+  early.history[5].cardIds = ['H3'];
+  assertImportRejected(early, ['第 6 条', '甲', '不能压过']);
+
+  // 第 39 条：乙最后自由领出（手里是 ♦2 ♠7 ♣7），改成不成牌型的 ♦2 ♠7——已执行三十多条命令后才失败。
+  const late = clone(file);
+  assert.strictEqual(late.history[38].seq, 39);
+  late.history[38].cardIds = ['D2', 'S7'];
+  assertImportRejected(late, ['第 39 条', '乙', '非法牌型']);
+});
+
+test('Game: 导入校验 用例 7 剩余手牌或当前玩家与记录对不上被拒绝', () => {
+  const file = readArchiveState(ARCHIVE_FILE);
+  const missing = clone(file);
+  missing.players[1].handIds = ['S7'];          // 乙应剩 ♠7 ♣7 两张
+  assertImportRejected(missing, ['乙', '手牌']);
+
+  const swapped = clone(file);
+  swapped.players[0].handIds = ['SA', 'HK', 'CQ', 'SJ', 'D3']; // 甲应剩 ♠A ♥K ♣Q ♠J ♥3；♥3 换成已打出的 ♦3
+  assertImportRejected(swapped, ['甲', '手牌']);
+
+  const wrongTurn = clone(file);
+  wrongTurn.currentPlayerId = 'A';
+  assertImportRejected(wrongTurn, ['当前行动玩家']);
+});
+
+test('Game: 导入校验 用例 8 派生记录被改或记录被截断被拒绝', () => {
+  const finished = playSpringGame();
+  const badMultiplier = clone(finished);
+  const mIdx = badMultiplier.history.findIndex(function (h) { return h.type === 'multiplier'; });
+  badMultiplier.history[mIdx].after = 4;
+  assertImportRejected(badMultiplier, ['第 ' + badMultiplier.history[mIdx].seq + ' 条']);
+
+  const badScore = clone(finished);
+  badScore.result.scores = { A: 0, B: 0, C: 0 };
+  assertImportRejected(badScore, ['结算']);
+
+  const file = readArchiveState(ARCHIVE_FILE);
+  const truncated = clone(file);
+  truncated.history = truncated.history.slice(0, 3); // 丙叫 3 分后本应有「确定地主」
+  assertImportRejected(truncated, ['第 4 条', '缺失', '确定地主']);
+});
+
+test('Security: 导入 用例 1 存档只用纯 JSON，保存提示词不附状态数据', () => {
+  const ui = fs.readFileSync('ui.js', 'utf8');
+  assert.ok(!ui.includes('importPromptMd'), '不应再有从提示词文件导入的分支');
+  // 旧 .md 存档格式的痕迹全部去掉：标题、状态数据段、json 代码块解析、md 导出函数。
+  ['# 斗地主牌局存档', '## 状态数据（供导入还原）', '```json', 'buildExportMd'].forEach(function (old) {
+    assert.ok(!ui.includes(old), 'ui.js 不应再出现旧 .md 存档格式：' + old);
+  });
+  assert.ok(ui.includes("'.json'"), '导出文件应为 .json');
+  assert.ok(ui.includes('不是有效的 JSON'), '非 JSON 文件应给出明确拒绝提示');
+  assert.ok(ui.includes('charCodeAt(0) === 0xFEFF'), '解析前应去掉开头可能残留的 BOM');
+  assert.ok(!ui.includes('# 斗地主推理提示词'), '保存提示词只存提示词正文');
+
+  const html = fs.readFileSync('ddz.html', 'utf8');
+  assert.ok(html.includes('id="import-file-input" type="file" accept=".json,application/json"'),
+    '导入的文件选择框只列 .json 文件');
+});
+
+test('Security: 导入 用例 3 坏存档不拖垮启动、已结束牌局无提示词时有说明', () => {
+  // 界面行为只能静态检查；实际表现由仓库外的无界面 Chrome 测试页实跑（见规格 §11.1）。
+  const ui = fs.readFileSync('ui.js', 'utf8');
+  assert.ok(ui.includes('（存档已损坏，可删除）'), '坏存档应在下拉框里显示为已损坏');
+  assert.ok(ui.includes('导入或回放的已结束牌局不会生成提示词，没有可复制的内容。'),
+    '已结束且无提示词时应给出说明，而不是只拼一句结束标注');
+});
+
+test('Security: 导入 用例 2 残局示例是纯 JSON 牌局数据', () => {
+  const text = fs.readFileSync(ARCHIVE_FILE, 'utf8');
+  assert.ok(text.trimStart().startsWith('{'), '应是纯 JSON，开头不带 markdown 标题');
+  const state = JSON.parse(text);
+  assert.ok(Array.isArray(state.history) && state.history[0].type === 'deal');
+});
